@@ -1,9 +1,16 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"google.golang.org/grpc"
+	"milvusmetagui/show"
+	"strings"
+	"time"
 )
 
 type ui struct {
@@ -20,11 +27,51 @@ type ui struct {
 	passEntry   *widget.Entry
 	keyEntry    *widget.Entry
 	textArea    *widget.Entry
+	etcdClient  *clientv3.Client
 	window      fyne.Window
 }
 
 func newMilvusmetar() *ui {
 	return &ui{}
+}
+
+func (m *ui) connect() {
+	fmt.Println(m.ipEntry.Text, m.portEntry.Text, m.userEntry.Text, m.passEntry.Text)
+	endpoints := m.ipEntry.Text + ":" + m.portEntry.Text
+	c, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{endpoints},
+		Username:    m.userEntry.Text,
+		Password:    m.passEntry.Text,
+		DialTimeout: 5 * time.Second,
+		DialOptions: []grpc.DialOption{
+			grpc.WithBlock(),
+		},
+	})
+	if err != nil {
+		m.textArea.SetText(err.Error())
+	}
+	m.etcdClient = c
+	//m.connButton.Disable()
+}
+
+func (m *ui) parse() {
+	//keyPrefix := "by-dev/meta/root-coord/database/collection-info/1"
+	keyPrefix := m.keyEntry.Text
+	opts := []clientv3.OpOption{
+		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
+		clientv3.WithLimit(5000),
+		clientv3.WithRange(clientv3.GetPrefixRangeEnd(keyPrefix)),
+	}
+	ctx := context.Background()
+	resp, _ := m.etcdClient.Get(ctx, keyPrefix, opts...)
+	var result string
+	if strings.Contains(keyPrefix, "database/collection-info") {
+		result = show.ShowCollsInfo(resp)
+	}
+	if strings.Contains(keyPrefix, "database/db-info") {
+		result = show.ShowDbsInfo(resp)
+	}
+	m.textArea.SetText(result)
 }
 
 func (m *ui) loadUI(app fyne.App) {
@@ -46,6 +93,7 @@ func (m *ui) loadUI(app fyne.App) {
 
 	m.portEntry = widget.NewEntry()
 	m.portEntry.SetPlaceHolder("input port")
+	m.portEntry.SetText("2379")
 	m.portEntry.Resize(fyne.NewSize(200, 40))
 	m.portEntry.Move(fyne.NewPos(240, 40))
 
@@ -69,7 +117,7 @@ func (m *ui) loadUI(app fyne.App) {
 	m.passEntry.Resize(fyne.NewSize(200, 40))
 	m.passEntry.Move(fyne.NewPos(240, 110))
 
-	m.connButton = widget.NewButton("connect", func() {})
+	m.connButton = widget.NewButton("connect", m.connect)
 	m.connButton.Importance = widget.HighImportance
 	m.connButton.Resize(fyne.NewSize(100, 40))
 	m.connButton.Move(fyne.NewPos(10, 160))
@@ -84,7 +132,7 @@ func (m *ui) loadUI(app fyne.App) {
 	m.keyEntry.SetPlaceHolder("input etcd key")
 	m.keyEntry.Move(fyne.NewPos(10, 250))
 
-	m.parseButton = widget.NewButton("parse", func() {})
+	m.parseButton = widget.NewButton("parse", m.parse)
 	m.parseButton.Importance = widget.HighImportance
 	m.parseButton.Resize(fyne.NewSize(100, 40))
 	m.parseButton.Move(fyne.NewPos(10, 300))
