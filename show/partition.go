@@ -6,11 +6,13 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"milvusmetagui/model"
 	pb "milvusmetagui/proto/etcdpb"
+	"milvusmetagui/utils"
+	"strings"
 )
 
-func ShowPartsInfo(resp *clientv3.GetResponse) {
+func ShowPartsInfo(resp *clientv3.GetResponse) string {
 	parts, _ := ListPartitions(resp)
-	PrintParts(parts)
+	return PrintParts(parts)
 }
 
 func ListPartitions(resp *clientv3.GetResponse) (map[string]*model.Partition, error) {
@@ -30,14 +32,18 @@ func ListPartitions(resp *clientv3.GetResponse) (map[string]*model.Partition, er
 	return parts, nil
 }
 
-func PrintParts(partsMap map[string]*model.Partition) {
+func PrintParts(partsMap map[string]*model.Partition) string {
+	var builder strings.Builder
 	for k, part := range partsMap {
-		fmt.Printf("===key:%s===\n", k)
-		fmt.Printf("PartitionID:%d\n", part.PartitionID)
-		fmt.Printf("PartitionName:%s\n", part.PartitionName)
-		fmt.Printf("PartitionCreatedTimestamp:%d\n", part.PartitionCreatedTimestamp)
-		fmt.Printf("CollectionID:%d\n", part.CollectionID)
-		fmt.Printf("State:%s\n", part.State.String())
-		fmt.Println()
+		builder.WriteString(fmt.Sprintf("===key:%s===\n", k))
+		builder.WriteString(fmt.Sprintf("PartitionID:%d\n", part.PartitionID))
+		builder.WriteString(fmt.Sprintf("PartitionName:%s\n", part.PartitionName))
+		p, l := utils.ParseTS(part.PartitionCreatedTimestamp)
+		timestr := fmt.Sprintf("physicalTime:%s,logicalTime:%d", p, l)
+		builder.WriteString(fmt.Sprintf("PartitionCreatedTimestamp:%d(%s)\n", part.PartitionCreatedTimestamp, timestr))
+		builder.WriteString(fmt.Sprintf("CollectionID:%d\n", part.CollectionID))
+		builder.WriteString(fmt.Sprintf("State:%s\n", part.State.String()))
+		builder.WriteString("\n")
 	}
+	return builder.String()
 }

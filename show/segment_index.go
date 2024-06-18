@@ -6,11 +6,13 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"milvusmetagui/model"
 	"milvusmetagui/proto/indexpb"
+	"milvusmetagui/utils"
+	"strings"
 )
 
-func ShowSegIndexesInfo(resp *clientv3.GetResponse) {
+func ShowSegIndexesInfo(resp *clientv3.GetResponse) string {
 	segindexes, _ := ListSegmentIndexes(resp)
-	PrintSegIndexes(segindexes)
+	return PrintSegIndexes(segindexes)
 }
 
 func ListSegmentIndexes(resp *clientv3.GetResponse) (map[string]*model.SegmentIndex, error) {
@@ -33,26 +35,30 @@ func ListSegmentIndexes(resp *clientv3.GetResponse) (map[string]*model.SegmentIn
 	return segIndexes, nil
 }
 
-func PrintSegIndexes(segIdxMap map[string]*model.SegmentIndex) {
+func PrintSegIndexes(segIdxMap map[string]*model.SegmentIndex) string {
+	var builder strings.Builder
 	for k, segidx := range segIdxMap {
-		fmt.Printf("===key:%s===\n", k)
-		fmt.Printf("SegmentID:%d\n", segidx.SegmentID)
-		fmt.Printf("CollectionID:%d\n", segidx.CollectionID)
-		fmt.Printf("PartitionID:%d\n", segidx.PartitionID)
-		fmt.Printf("NumRows:%d\n", segidx.NumRows)
-		fmt.Printf("IndexID:%d\n", segidx.IndexID)
-		fmt.Printf("BuildID:%d\n", segidx.BuildID)
-		fmt.Printf("NodeID:%d\n", segidx.NodeID)
-		fmt.Printf("IndexVersion:%d\n", segidx.IndexVersion)
-		fmt.Printf("IndexState:%s\n", segidx.IndexState.String())
-		fmt.Printf("FailReason:%s\n", segidx.FailReason)
-		fmt.Printf("IsDeleted:%t\n", segidx.IsDeleted)
-		fmt.Printf("CreateTime:%d\n", segidx.CreateTime)
-		fmt.Printf("IndexSize:%d\n", segidx.IndexSize)
-		fmt.Printf("WriteHandoff:%t\n", segidx.WriteHandoff)
-		fmt.Printf("CurrentIndexVersion:%d\n", segidx.CurrentIndexVersion)
-		fmt.Printf("IndexStoreVersion:%d\n", segidx.IndexStoreVersion)
-		fmt.Printf("IndexFileKeys:%v\n", segidx.IndexFileKeys)
-		fmt.Println()
+		builder.WriteString(fmt.Sprintf("===key:%s===\n", k))
+		builder.WriteString(fmt.Sprintf("SegmentID:%d\n", segidx.SegmentID))
+		builder.WriteString(fmt.Sprintf("CollectionID:%d\n", segidx.CollectionID))
+		builder.WriteString(fmt.Sprintf("PartitionID:%d\n", segidx.PartitionID))
+		builder.WriteString(fmt.Sprintf("NumRows:%d\n", segidx.NumRows))
+		builder.WriteString(fmt.Sprintf("IndexID:%d\n", segidx.IndexID))
+		builder.WriteString(fmt.Sprintf("BuildID:%d\n", segidx.BuildID))
+		builder.WriteString(fmt.Sprintf("NodeID:%d\n", segidx.NodeID))
+		builder.WriteString(fmt.Sprintf("IndexVersion:%d\n", segidx.IndexVersion))
+		builder.WriteString(fmt.Sprintf("IndexState:%s\n", segidx.IndexState.String()))
+		builder.WriteString(fmt.Sprintf("FailReason:%s\n", segidx.FailReason))
+		builder.WriteString(fmt.Sprintf("IsDeleted:%t\n", segidx.IsDeleted))
+		p, l := utils.ParseTS(segidx.CreateTime)
+		timestr := fmt.Sprintf("physicalTime:%s,logicalTime:%d", p, l)
+		builder.WriteString(fmt.Sprintf("CreateTime:%d(%s)\n", segidx.CreateTime, timestr))
+		builder.WriteString(fmt.Sprintf("IndexSize:%d\n", segidx.IndexSize))
+		builder.WriteString(fmt.Sprintf("WriteHandoff:%t\n", segidx.WriteHandoff))
+		builder.WriteString(fmt.Sprintf("CurrentIndexVersion:%d\n", segidx.CurrentIndexVersion))
+		builder.WriteString(fmt.Sprintf("IndexStoreVersion:%d\n", segidx.IndexStoreVersion))
+		builder.WriteString(fmt.Sprintf("IndexFileKeys:%v\n", segidx.IndexFileKeys))
+		builder.WriteString("\n")
 	}
+	return builder.String()
 }

@@ -6,6 +6,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"milvusmetagui/model"
 	pb "milvusmetagui/proto/etcdpb"
+	"milvusmetagui/utils"
 	"strings"
 )
 
@@ -36,10 +37,13 @@ func PrintDbs(dbs map[string]*model.Database) string {
 		builder.WriteString(fmt.Sprintf("ID:%d\n", db.ID))
 		builder.WriteString(fmt.Sprintf("Name:%s\n", db.Name))
 		builder.WriteString(fmt.Sprintf("State:%s\n", db.State.String()))
-		builder.WriteString(fmt.Sprintf("CreatedTime:%d\n", db.CreatedTime))
+		p, l := utils.ParseTS(db.CreatedTime)
+		timestr := fmt.Sprintf("physicalTime:%s,logicalTime:%d", p, l)
+		builder.WriteString(fmt.Sprintf("CreatedTime:%d(%s)\n", db.CreatedTime, timestr))
 		for _, props := range db.Properties {
 			builder.WriteString(fmt.Sprintf("%s:%s\n", props.GetKey(), props.GetValue()))
 		}
+		builder.WriteString("\n")
 	}
 	return builder.String()
 }

@@ -6,11 +6,12 @@ import (
 	"github.com/milvus-io/milvus-proto/go-api/v2/schemapb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"milvusmetagui/model"
+	"strings"
 )
 
-func ShowFieldsInfo(resp *clientv3.GetResponse) {
+func ShowFieldsInfo(resp *clientv3.GetResponse) string {
 	fields, _ := listFields(resp)
-	PrintFields(fields)
+	return PrintFields(fields)
 }
 
 func listFields(resp *clientv3.GetResponse) (map[string]*model.Field, error) {
@@ -31,33 +32,35 @@ func listFields(resp *clientv3.GetResponse) (map[string]*model.Field, error) {
 	return fields, nil
 }
 
-func PrintFields(fieldsMap map[string]*model.Field) {
+func PrintFields(fieldsMap map[string]*model.Field) string {
+	var builder strings.Builder
 	for k, field := range fieldsMap {
-		fmt.Printf("===key:%s===\n", k)
-		fmt.Printf("FieldID:%d\n", field.FieldID)
-		fmt.Printf("Name:%s\n", field.Name)
-		fmt.Printf("IsPrimaryKey:%t\n", field.IsPrimaryKey)
-		fmt.Printf("Description:%s\n", field.Description)
-		fmt.Printf("DataType:%s\n", field.DataType.String())
-		fmt.Printf("AutoID:%t\n", field.AutoID)
-		fmt.Printf("State:%s\n", field.State.String())
-		fmt.Printf("IsDynamic:%t\n", field.IsDynamic)
-		fmt.Printf("IsPartitionKey:%t\n", field.IsPartitionKey)
-		fmt.Printf("IsClusteringKey:%t\n", field.IsClusteringKey)
-		fmt.Printf("ElementType:%s\n", field.ElementType.String())
+		builder.WriteString(fmt.Sprintf("===key:%s===\n", k))
+		builder.WriteString(fmt.Sprintf("FieldID:%d\n", field.FieldID))
+		builder.WriteString(fmt.Sprintf("Name:%s\n", field.Name))
+		builder.WriteString(fmt.Sprintf("IsPrimaryKey:%t\n", field.IsPrimaryKey))
+		builder.WriteString(fmt.Sprintf("Description:%s\n", field.Description))
+		builder.WriteString(fmt.Sprintf("DataType:%s\n", field.DataType.String()))
+		builder.WriteString(fmt.Sprintf("AutoID:%t\n", field.AutoID))
+		builder.WriteString(fmt.Sprintf("State:%s\n", field.State.String()))
+		builder.WriteString(fmt.Sprintf("IsDynamic:%t\n", field.IsDynamic))
+		builder.WriteString(fmt.Sprintf("IsPartitionKey:%t\n", field.IsPartitionKey))
+		builder.WriteString(fmt.Sprintf("IsClusteringKey:%t\n", field.IsClusteringKey))
+		builder.WriteString(fmt.Sprintf("ElementType:%s\n", field.ElementType.String()))
 		if field.DefaultValue == nil {
-			fmt.Printf("DefaultValue:%s\n", "")
+			builder.WriteString(fmt.Sprintf("DefaultValue:%s\n", ""))
 		} else {
-			fmt.Printf("DefaultValue:%s\n", "待解析")
+			builder.WriteString(fmt.Sprintf("DefaultValue:%s\n", "待解析"))
 		}
-		fmt.Printf("TypeParams:\n")
+		builder.WriteString(fmt.Sprintf("TypeParams:\n"))
 		for _, param := range field.TypeParams {
-			fmt.Printf("%s:%s\n", param.GetKey(), param.GetValue())
+			builder.WriteString(fmt.Sprintf("    %s:%s\n", param.GetKey(), param.GetValue()))
 		}
-		fmt.Printf("IndexParams:\n")
+		builder.WriteString(fmt.Sprintf("IndexParams:\n"))
 		for _, param := range field.IndexParams {
-			fmt.Printf("%s:%s\n", param.GetKey(), param.GetValue())
+			builder.WriteString(fmt.Sprintf("    %s:%s\n", param.GetKey(), param.GetValue()))
 		}
-		fmt.Println()
+		builder.WriteString("\n")
 	}
+	return builder.String()
 }

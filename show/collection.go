@@ -6,6 +6,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"milvusmetagui/model"
 	pb "milvusmetagui/proto/etcdpb"
+	"milvusmetagui/utils"
 	"strings"
 )
 
@@ -44,7 +45,9 @@ func PrintColls(colls map[string]*model.Collection) string {
 		builder.WriteString(fmt.Sprintf("VirtualChannelNames:%v\n", coll.VirtualChannelNames))
 		builder.WriteString(fmt.Sprintf("PhysicalChannelNames:%v\n", coll.PhysicalChannelNames))
 		builder.WriteString(fmt.Sprintf("ShardsNum:%d\n", coll.ShardsNum))
-		builder.WriteString(fmt.Sprintf("CreateTime:%d\n", coll.CreateTime))
+		p, l := utils.ParseTS(coll.CreateTime)
+		timestr := fmt.Sprintf("physicalTime:%s,logicalTime:%d", p, l)
+		builder.WriteString(fmt.Sprintf("CreateTime:%d(%s)\n", coll.CreateTime, timestr))
 		builder.WriteString(fmt.Sprintf("ConsistencyLevel:%s\n", coll.ConsistencyLevel.String()))
 		builder.WriteString(fmt.Sprintf("Aliases:%v\n", coll.Aliases))
 		builder.WriteString(fmt.Sprintf("State:%s\n", coll.State.String()))
@@ -57,6 +60,7 @@ func PrintColls(colls map[string]*model.Collection) string {
 		for _, property := range coll.Properties {
 			builder.WriteString(fmt.Sprintf("    %s:%s\n", property.GetKey(), property.GetValue()))
 		}
+		builder.WriteString("\n")
 	}
 	return builder.String()
 }

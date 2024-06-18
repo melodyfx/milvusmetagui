@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -16,6 +15,7 @@ import (
 type ui struct {
 	labelKey    *widget.Label
 	connButton  *widget.Button
+	connLable   *widget.Label
 	parseButton *widget.Button
 	ipLabel     *widget.Label
 	ipEntry     *widget.Entry
@@ -36,7 +36,8 @@ func newMilvusmetar() *ui {
 }
 
 func (m *ui) connect() {
-	fmt.Println(m.ipEntry.Text, m.portEntry.Text, m.userEntry.Text, m.passEntry.Text)
+	//fmt.Println(m.ipEntry.Text, m.portEntry.Text, m.userEntry.Text, m.passEntry.Text)
+	m.connLable.SetText("")
 	endpoints := m.ipEntry.Text + ":" + m.portEntry.Text
 	c, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{endpoints},
@@ -48,15 +49,22 @@ func (m *ui) connect() {
 		},
 	})
 	if err != nil {
-		m.textArea.SetText(err.Error())
+		m.connLable.SetText(err.Error())
+		return
+	} else {
+		m.connLable.SetText("success")
+		m.parseButton.Enable()
 	}
 	m.etcdClient = c
 	//m.connButton.Disable()
 }
 
 func (m *ui) parse() {
-	//keyPrefix := "by-dev/meta/root-coord/database/collection-info/1"
 	keyPrefix := m.keyEntry.Text
+	if keyPrefix == "" {
+		m.textArea.SetText("please input etcd key")
+		return
+	}
 	opts := []clientv3.OpOption{
 		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
 		clientv3.WithLimit(5000),
@@ -65,13 +73,36 @@ func (m *ui) parse() {
 	ctx := context.Background()
 	resp, _ := m.etcdClient.Get(ctx, keyPrefix, opts...)
 	var result string
+	//keyPrefix := "by-dev/meta/root-coord/database/collection-info/1"
 	if strings.Contains(keyPrefix, "database/collection-info") {
 		result = show.ShowCollsInfo(resp)
 	}
+	//keyPrefix := "by-dev/meta/root-coord/database/db-info"
 	if strings.Contains(keyPrefix, "database/db-info") {
 		result = show.ShowDbsInfo(resp)
 	}
-	m.textArea.SetText(result)
+	//keyPrefix := "by-dev/meta/root-coord/fields/449657611215201437"
+	if strings.Contains(keyPrefix, "root-coord/fields") {
+		result = show.ShowFieldsInfo(resp)
+	}
+	//keyPrefix := "by-dev/meta/field-index/449657611215201437/449663566298480829"
+	if strings.Contains(keyPrefix, "field-index") {
+		result = show.ShowIndexesInfo(resp)
+	}
+	//keyPrefix := "by-dev/meta/root-coord/partitions/449657611215201437"
+	if strings.Contains(keyPrefix, "root-coord/partitions") {
+		result = show.ShowPartsInfo(resp)
+	}
+	//keyPrefix := "by-dev/meta/segment-index/449682565894505321/449682565894505322/449682565894705334/449682565894906272"
+	if strings.Contains(keyPrefix, "segment-index") {
+		result = show.ShowSegIndexesInfo(resp)
+	}
+	if result == "" {
+		m.textArea.SetText("etcd key is invalid")
+	} else {
+		m.textArea.SetText(result)
+	}
+
 }
 
 func (m *ui) loadUI(app fyne.App) {
@@ -122,6 +153,11 @@ func (m *ui) loadUI(app fyne.App) {
 	m.connButton.Resize(fyne.NewSize(100, 40))
 	m.connButton.Move(fyne.NewPos(10, 160))
 
+	m.connLable = widget.NewLabel("")
+	m.connLable.Resize(fyne.NewSize(200, 30))
+	m.connLable.Alignment = fyne.TextAlignLeading
+	m.connLable.Move(fyne.NewPos(130, 160))
+
 	m.labelKey = widget.NewLabel("input etcd key:")
 	m.labelKey.Resize(fyne.NewSize(60, 30))
 	m.labelKey.Alignment = fyne.TextAlignLeading
@@ -136,6 +172,7 @@ func (m *ui) loadUI(app fyne.App) {
 	m.parseButton.Importance = widget.HighImportance
 	m.parseButton.Resize(fyne.NewSize(100, 40))
 	m.parseButton.Move(fyne.NewPos(10, 300))
+	m.parseButton.Disable()
 
 	m.textArea = widget.NewMultiLineEntry()
 	m.textArea.Resize(fyne.NewSize(450, 240))
@@ -151,6 +188,7 @@ func (m *ui) loadUI(app fyne.App) {
 		m.passLable,
 		m.passEntry,
 		m.connButton,
+		m.connLable,
 		m.labelKey,
 		m.keyEntry,
 		m.parseButton,
