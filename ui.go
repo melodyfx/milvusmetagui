@@ -194,11 +194,9 @@ func (m *ui) loadUI(app fyne.App) {
 		m.keyEntry,
 		m.parseButton,
 		m.textArea)
-	
+
 	m.window.SetContent(c)
-	m.window.SetFixedSize(true)
 	m.window.Resize(fyne.NewSize(500, 600))
 	m.window.CenterOnScreen()
 	m.window.Show()
-
 }
