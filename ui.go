@@ -60,6 +60,7 @@ func (m *ui) connect() {
 }
 
 func (m *ui) parse() {
+	m.textArea.SetText("")
 	keyPrefix := m.keyEntry.Text
 	if keyPrefix == "" {
 		m.textArea.SetText("please input etcd key")
