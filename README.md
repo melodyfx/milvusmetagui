@@ -14,7 +14,7 @@ milvusmetagui是一款用来对milvus的元数据进行解析的工具，milvus�
 
 取其中一个，例如`by-dev/meta/root-coord/database/db-info/1`
 
-<img src="pic\db02.png" style="zoom:50%;" />
+![](pic\db02.png)
 
 ### 2.解析collection
 
@@ -24,7 +24,7 @@ milvusmetagui是一款用来对milvus的元数据进行解析的工具，milvus�
 
 取其中一个，例如`by-dev/meta/root-coord/database/collection-info/1/449952137045880999`
 
-<img src="pic\col02.png" style="zoom:50%;" />
+![](pic\col02.png)
 
 
 
@@ -36,7 +36,7 @@ milvusmetagui是一款用来对milvus的元数据进行解析的工具，milvus�
 
 取其中一个，例如`by-dev/meta/root-coord/fields/449952137045880999/102`
 
-<img src="pic\fields02.png" style="zoom:50%;" />
+![](pic\fields02.png)
 
 ### 4.解析field-index
 
@@ -46,7 +46,7 @@ milvusmetagui是一款用来对milvus的元数据进行解析的工具，milvus�
 
 取其中一个，例如`by-dev/meta/field-index/449952137045880999/449952137045881004`
 
-<img src="pic\field-index02.png" style="zoom:50%;" />
+![](pic\field-index02.png)
 
 ### 5.解析segment-index
 
@@ -56,7 +56,7 @@ milvusmetagui是一款用来对milvus的元数据进行解析的工具，milvus�
 
 取其中一个，例如`by-dev/meta/segment-index/449952137045880999/449952137045881000/449952137046086601/449952137047289214`
 
-<img src="pic\seg-index02.png" style="zoom:50%;" />
+![](pic\seg-index02.png)
 
 ### 6.解析partition
 
@@ -66,4 +66,4 @@ milvusmetagui是一款用来对milvus的元数据进行解析的工具，milvus�
 
 取其中一个，例如`by-dev/meta/segment-index/449952137045880999/449952137045881000/449952137046086601/449952137047289214`
 
-<img src="pic\partition02.png" style="zoom:50%;" />
+![](pic\partition02.png)
