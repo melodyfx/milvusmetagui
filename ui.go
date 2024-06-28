@@ -4,6 +4,7 @@ import (
 	"context"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
@@ -15,15 +16,10 @@ import (
 type ui struct {
 	labelKey    *widget.Label
 	connButton  *widget.Button
-	connLable   *widget.Label
 	parseButton *widget.Button
-	ipLabel     *widget.Label
 	ipEntry     *widget.Entry
-	portLabel   *widget.Label
 	portEntry   *widget.Entry
-	userLable   *widget.Label
 	userEntry   *widget.Entry
-	passLable   *widget.Label
 	passEntry   *widget.Entry
 	keyEntry    *widget.Entry
 	textArea    *widget.Entry
@@ -36,27 +32,26 @@ func newMilvusmetar() *ui {
 }
 
 func (m *ui) connect() {
-	//fmt.Println(m.ipEntry.Text, m.portEntry.Text, m.userEntry.Text, m.passEntry.Text)
-	m.connLable.SetText("")
 	endpoints := m.ipEntry.Text + ":" + m.portEntry.Text
 	c, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{endpoints},
 		Username:    m.userEntry.Text,
 		Password:    m.passEntry.Text,
-		DialTimeout: 5 * time.Second,
+		DialTimeout: 2 * time.Second,
 		DialOptions: []grpc.DialOption{
 			grpc.WithBlock(),
 		},
 	})
 	if err != nil {
-		m.connLable.SetText(err.Error())
+		dialog.NewError(err, m.window).Show()
 		return
 	} else {
-		m.connLable.SetText("success")
+		title := "info"
+		msg := "Connected successfully"
+		dialog.NewInformation(title, msg, m.window).Show()
 		m.parseButton.Enable()
 	}
 	m.etcdClient = c
-	//m.connButton.Disable()
 }
 
 func (m *ui) parse() {
@@ -108,95 +103,54 @@ func (m *ui) parse() {
 
 func (m *ui) loadUI(app fyne.App) {
 
-	m.ipLabel = widget.NewLabel("ETCD IP")
-	m.ipLabel.Resize(fyne.NewSize(30, 30))
-	m.ipLabel.Alignment = fyne.TextAlignLeading
-	m.ipLabel.Move(fyne.NewPos(10, 10))
-
 	m.ipEntry = widget.NewEntry()
 	m.ipEntry.SetPlaceHolder("input ip address")
-	m.ipEntry.Resize(fyne.NewSize(200, 40))
-	m.ipEntry.Move(fyne.NewPos(10, 40))
-
-	m.portLabel = widget.NewLabel("PORT")
-	m.portLabel.Resize(fyne.NewSize(30, 30))
-	m.portLabel.Alignment = fyne.TextAlignLeading
-	m.portLabel.Move(fyne.NewPos(240, 10))
+	ipEntryL := widget.NewFormItem("ETCD IP", m.ipEntry)
 
 	m.portEntry = widget.NewEntry()
 	m.portEntry.SetPlaceHolder("input port")
 	m.portEntry.SetText("2379")
-	m.portEntry.Resize(fyne.NewSize(200, 40))
-	m.portEntry.Move(fyne.NewPos(240, 40))
-
-	m.userLable = widget.NewLabel("USER")
-	m.userLable.Resize(fyne.NewSize(30, 30))
-	m.userLable.Alignment = fyne.TextAlignLeading
-	m.userLable.Move(fyne.NewPos(10, 80))
+	portEntryL := widget.NewFormItem("PORT", m.portEntry)
 
 	m.userEntry = widget.NewEntry()
 	m.userEntry.SetPlaceHolder("input username")
-	m.userEntry.Resize(fyne.NewSize(200, 40))
-	m.userEntry.Move(fyne.NewPos(10, 110))
-
-	m.passLable = widget.NewLabel("PASSWORD")
-	m.passLable.Resize(fyne.NewSize(30, 30))
-	m.passLable.Alignment = fyne.TextAlignLeading
-	m.passLable.Move(fyne.NewPos(240, 80))
+	userEntryL := widget.NewFormItem("USERNAME", m.userEntry)
 
 	m.passEntry = widget.NewPasswordEntry()
 	m.passEntry.SetPlaceHolder("input password")
-	m.passEntry.Resize(fyne.NewSize(200, 40))
-	m.passEntry.Move(fyne.NewPos(240, 110))
-
+	passEntryL := widget.NewFormItem("PASSWORD", m.passEntry)
+	form1 := widget.NewForm(
+		ipEntryL, userEntryL,
+	)
+	form2 := widget.NewForm(
+		portEntryL, passEntryL,
+	)
+	c1 := container.NewGridWithColumns(2, form1, form2)
 	m.connButton = widget.NewButton("connect", m.connect)
 	m.connButton.Importance = widget.HighImportance
-	m.connButton.Resize(fyne.NewSize(100, 40))
-	m.connButton.Move(fyne.NewPos(10, 160))
-
-	m.connLable = widget.NewLabel("")
-	m.connLable.Resize(fyne.NewSize(200, 30))
-	m.connLable.Alignment = fyne.TextAlignLeading
-	m.connLable.Move(fyne.NewPos(130, 160))
+	c2 := container.NewGridWithColumns(4, m.connButton)
 
 	m.labelKey = widget.NewLabel("input etcd key:")
-	m.labelKey.Resize(fyne.NewSize(60, 30))
-	m.labelKey.Alignment = fyne.TextAlignLeading
-	m.labelKey.Move(fyne.NewPos(10, 210))
 
 	m.keyEntry = widget.NewEntry()
-	m.keyEntry.Resize(fyne.NewSize(450, 40))
 	m.keyEntry.SetPlaceHolder("input etcd key")
-	m.keyEntry.Move(fyne.NewPos(10, 250))
 
 	m.parseButton = widget.NewButton("parse", m.parse)
 	m.parseButton.Importance = widget.HighImportance
-	m.parseButton.Resize(fyne.NewSize(100, 40))
-	m.parseButton.Move(fyne.NewPos(10, 300))
 	m.parseButton.Disable()
 
+	cbtn := container.NewGridWithColumns(4, m.parseButton)
+
 	m.textArea = widget.NewMultiLineEntry()
-	m.textArea.Resize(fyne.NewSize(450, 240))
-	m.textArea.Move(fyne.NewPos(10, 350))
+
+	c3 := container.NewVBox(c1, c2, m.labelKey, m.keyEntry, cbtn)
+
+	content := container.NewBorder(c3, nil, nil, nil, m.textArea)
 
 	m.window = app.NewWindow("milvus meta parse")
-	c := container.NewWithoutLayout(m.ipLabel,
-		m.ipEntry,
-		m.portLabel,
-		m.portEntry,
-		m.userLable,
-		m.userEntry,
-		m.passLable,
-		m.passEntry,
-		m.connButton,
-		m.connLable,
-		m.labelKey,
-		m.keyEntry,
-		m.parseButton,
-		m.textArea)
 
-	m.window.SetContent(c)
-	m.window.Resize(fyne.NewSize(500, 600))
+	m.window.SetContent(content)
+	m.window.Resize(fyne.NewSize(600, 600))
 	m.window.CenterOnScreen()
 	m.window.Show()
 }
